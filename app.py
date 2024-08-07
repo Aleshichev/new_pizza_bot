@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+from middlewares.db import DataBaseSession
 from database.engine import create_db, drop_db, session_maker
 from handlers.user_private import user_private_router
 
@@ -34,12 +35,16 @@ async def main():
     dp.startup.register(on_startup)
     dp.shutdown.register(on_shutdown)
     
+    dp.update.middleware(DataBaseSession(session_pool=session_maker))
+
+    
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s') 
 
     bot = Bot(
         token=os.getenv("TOKEN"),
         default=DefaultBotProperties(parse_mode=ParseMode.HTML),
     )
+    bot.my_admins_list = []
     
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
