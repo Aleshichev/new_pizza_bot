@@ -1,3 +1,6 @@
-https://www.youtube.com/watch?v=cNb6WYNvxok&list=PLNi5HdK6QEmWLtb8gh8pwcFUJCAabqZh_&index=1
+create .env
+TOKEN DB_NAME DB_PASSWORD DB_LOGIN DB_HOST DB_PORT=5432
 
-Pythonhubstudio youtube channel  aiogram3
+Docker comands:
+make run - run PostgresSQL
+make start - run bot
