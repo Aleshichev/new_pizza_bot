@@ -11,7 +11,7 @@ from kbds.reply import get_keyboard
 from kbds.inline import get_callback_btns
 
 
-from database.orm_query.orm_category import (
+from database.orm_query.category import (
     orm_get_categories,
 )
 
@@ -34,44 +34,50 @@ async def admin_features(message: types.Message):
     await message.answer("Hi! What do you want to do?", reply_markup=ADMIN_KB)
 
 
-
 ### -----------------  FSM  add/edit product ----------------- ###
 class AddProduct(StatesGroup):
     name = State()
     description = State()
-    
-    product_for_change = None
+    category = State()
 
+    product_for_change = None
 
 
 @admin_router.message(StateFilter(None), F.text == "Add product")
 async def add_product(message: types.Message, state: FSMContext):
-    await message.answer("Enter product name.\nPress . to skip changing the name.", reply_markup=types.ReplyKeyboardRemove())
+    await message.answer(
+        "Enter product name.\nPress . to skip changing the name.",
+        reply_markup=types.ReplyKeyboardRemove(),
+    )
     await state.set_state(AddProduct.name)
-    
+
 
 @admin_router.message(AddProduct.name, F.text)
 async def add_name(message: types.Message, state: FSMContext):
     if message.text == "." and AddProduct.product_for_change:
         await state.update_data(name=AddProduct.product_for_change.name)
     else:
-        if  3 >= len(message.text) >= 150:
+        if 3 >= len(message.text) >= 150:
             await message.answer(
                 "The product name must not exceed 150 characters or be less than 5 characters.\nPlease enter it again."
             )
             return
         await state.update_data(name=message.text)
-    await message.answer("Enter description.\n Press . to skip changing the description.")
+    await message.answer(
+        "Enter description.\n Press . to skip changing the description."
+    )
     await state.set_state(AddProduct.description)
+
 
 @admin_router.message(AddProduct.name)
 async def add_name2(message: types.Message, state: FSMContext):
     await message.answer("You entered invalid data, please enter the product name text")
 
 
-
 @admin_router.message(AddProduct.description, F.text)
-async def add_description(message: types.Message, state: FSMContext, session: AsyncSession):
+async def add_description(
+    message: types.Message, state: FSMContext, session: AsyncSession
+):
     if message.text == "." and AddProduct.product_for_change:
         await state.update_data(description=AddProduct.product_for_change.description)
     else:
@@ -83,6 +89,6 @@ async def add_description(message: types.Message, state: FSMContext, session: As
         await state.update_data(description=message.text)
 
     categories = await orm_get_categories(session)
-    btns = {category.name : str(category.id) for category in categories}
+    btns = {category.name: str(category.id) for category in categories}
     await message.answer("Select a category", reply_markup=get_callback_btns(btns=btns))
     await state.set_state(AddProduct.category)

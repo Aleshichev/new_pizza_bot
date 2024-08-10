@@ -2,6 +2,7 @@ import os
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from common.texts_for_db import categories
 from database.models import Base
+from database.orm_query.category import orm_create_categories
 
 
 DB_URL = f"postgresql+asyncpg://{os.getenv('DB_LOGIN')}:{os.getenv('DB_PASSWORD')}@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"
