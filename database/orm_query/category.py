@@ -1,10 +1,9 @@
 from sqlalchemy import select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.models import Banner, Category
+from database.models import Category
 
 
-### --------------- Category --------------- ###
 async def orm_get_categories(session: AsyncSession):
     query = select(Category)
     result = await session.execute(query)
