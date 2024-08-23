@@ -3,7 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from common.texts_for_db import categories
 from database.models import Base
 from database.orm_query.category import orm_create_categories
-
+from database.orm_query.banner import orm_add_banner_description
+from common.texts_for_db import description_for_info_pages
 
 DB_URL = f"postgresql+asyncpg://{os.getenv('DB_LOGIN')}:{os.getenv('DB_PASSWORD')}@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"
 engine = create_async_engine(DB_URL, echo=True)
@@ -19,7 +20,7 @@ async def create_db():
 
     async with session_maker() as session:
         await orm_create_categories(session, categories)
-    #     await orm_add_banner_description(session, description_for_info_pages)
+        await orm_add_banner_description(session, description_for_info_pages)
 
 
 async def drop_db():

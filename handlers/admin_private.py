@@ -7,7 +7,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from filters.chat_types import ChatTypeFilter, IsAdmin
 from kbds.reply import get_keyboard
 from kbds.inline import get_callback_btns
-
+from database.orm_query.banner import (
+    orm_get_info_pages,
+    orm_change_banner_image,
+)
 from database.orm_query.product import (
     orm_add_product,
     orm_update_product,
@@ -16,7 +19,6 @@ from database.orm_query.product import (
 )
 from database.orm_query.category import (
     orm_get_categories,
-    
 )
 
 
@@ -32,26 +34,27 @@ ADMIN_KB = get_keyboard(
     sizes=(2,),
 )
 
-#--------------- Main menu --------------- #
+# --------------- Main menu --------------- #
+
 
 @admin_router.message(Command("admin"))
 async def admin_features(message: types.Message, state: FSMContext):
     await state.set_state(None)
     await message.answer("Hi! What do you want to do?", reply_markup=ADMIN_KB)
-    
-    
-@admin_router.message(F.text == 'Assortment')
+
+
+@admin_router.message(F.text == "Assortment")
 async def admin_features(message: types.Message, session: AsyncSession):
     categories = await orm_get_categories(session)
-    btns = {category.name : f'category_{category.id}' for category in categories}
+    btns = {category.name: f"category_{category.id}" for category in categories}
     await message.answer("Select category", reply_markup=get_callback_btns(btns=btns))
 
 
-@admin_router.callback_query(F.data.startswith('category_'))
+@admin_router.callback_query(F.data.startswith("category_"))
 async def starting_at_product(callback: types.CallbackQuery, session: AsyncSession):
-    category_id = callback.data.split('_')[-1]
+    category_id = callback.data.split("_")[-1]
     products = await orm_get_products(session, int(category_id))
-    
+
     if not products:
         await callback.message.answer("The list of products is empty. No products.")
     else:
@@ -64,14 +67,51 @@ async def starting_at_product(callback: types.CallbackQuery, session: AsyncSessi
                         "Delete": f"delete_{product.id}",
                         "Edit": f"edit_{product.id}",
                     },
-                    sizes=(2,)
+                    sizes=(2,),
                 ),
             )
     await callback.answer()
     await callback.message.answer("The list of products ⏫")
-    
 
+
+# ---------- Micro FSM for Uploading/Modifying Banners -------------------#
+
+
+class AddBanner(StatesGroup):
+    image = State()
+
+
+@admin_router.message(StateFilter(None), F.text == "Add / edit banner")
+async def add_image2(message: types.Message, state: FSMContext, session: AsyncSession):
+    pages_names = [page.name for page in await orm_get_info_pages(session)]
+    await message.answer(
+        f"Send the banner photo.\nIn the caption, specify the page:\
+                         \n{', '.join(pages_names)}"
+    )
+    await state.set_state(AddBanner.image)
+
+@admin_router.message(AddBanner.image, F.photo)
+async def add_banner(message: types.Message, state: FSMContext, session: AsyncSession):
+    image_id = message.photo[-1].file_id
+    for_page = message.caption.strip()
+    pages_names = [page.name for page in await orm_get_info_pages(session)]
+    if for_page not in pages_names:
+        await message.answer(f"Enter a valid page name, for example:\
+                         \n{', '.join(pages_names)}")
+        return
+    await orm_change_banner_image(session, for_page, image_id,)
+    await message.answer("Banner added/modified.")
+    await state.clear()
+    
+@admin_router.message(AddBanner.image)
+async def add_banner2(message: types.Message, state: FSMContext):    
+    if message.text.casefold() == "cancel":
+        await state.clear()
+        await message.answer("Action canceled", reply_markup=ADMIN_KB)
+    else:
+        await message.answer("Send the banner photo or cancel")
 ### -----------------  FSM  add/edit product ----------------- ###
+
 
 class AddProduct(StatesGroup):
     name = State()
@@ -81,7 +121,16 @@ class AddProduct(StatesGroup):
     image = State()
 
     product_for_change = None
-    
+
+    texts = {
+        "AddProduct:name": "Enter the name again:",
+        "AddProduct:description": "Enter the description again:",
+        "AddProduct:category": "Select the category again ⬆️",
+        "AddProduct:price": "Enter the price again:",
+        "AddProduct:image": "This is the last state, so...",
+    }
+
+
 @admin_router.callback_query(StateFilter(None), F.data.startswith("edit_"))
 async def change_product_callback(
     callback: types.CallbackQuery, state: FSMContext, session: AsyncSession
@@ -94,7 +143,8 @@ async def change_product_callback(
 
     await callback.answer()
     await callback.message.answer(
-        "Enter product name.\nPress . to skip changing the name. ", reply_markup=types.ReplyKeyboardRemove()
+        "Enter product name.\nPress . to skip changing the name. ",
+        reply_markup=types.ReplyKeyboardRemove(),
     )
     await state.set_state(AddProduct.name)
 
@@ -106,6 +156,18 @@ async def add_product(message: types.Message, state: FSMContext):
         reply_markup=types.ReplyKeyboardRemove(),
     )
     await state.set_state(AddProduct.name)
+
+
+@admin_router.message(StateFilter("*"), Command("cancel"))
+@admin_router.message(StateFilter("*"), F.text.casefold() == "cancel")
+async def cancel_handler(message: types.Message, state: FSMContext) -> None:
+    current_state = await state.get_state()
+    if current_state is None:
+        return
+    if AddProduct.product_for_change:
+        AddProduct.product_for_change = None
+    await state.clear()
+    await message.answer("Actions canceled", reply_markup=ADMIN_KB)
 
 
 @admin_router.message(AddProduct.name, F.text)
@@ -158,6 +220,7 @@ async def add_description2(
         "You entered invalid data, please enter the product description text"
     )
 
+
 @admin_router.callback_query(AddProduct.category)
 async def category_choice(
     callback: types.CallbackQuery, state: FSMContext, session: AsyncSession
@@ -167,7 +230,9 @@ async def category_choice(
     ]:
         await callback.answer()
         await state.update_data(category=callback.data)
-        await callback.message.answer("Enter product price.\nPress . to skip changing the price.")
+        await callback.message.answer(
+            "Enter product price.\nPress . to skip changing the price."
+        )
         await state.set_state(AddProduct.price)
     else:
         await callback.message.answer("Select a category from buttons 1")
@@ -180,7 +245,7 @@ async def category_choice2(
     state: FSMContext,
 ):
     await message.answer("Select a category from buttons 2")
-    
+
 
 @admin_router.message(AddProduct.price, F.text)
 async def add_price(message: types.Message, state: FSMContext):
@@ -197,9 +262,13 @@ async def add_price(message: types.Message, state: FSMContext):
     await message.answer("Upload a product image.\nPress . to skip changing the image.")
     await state.set_state(AddProduct.image)
 
+
 @admin_router.message(AddProduct.price)
 async def add_price2(message: types.Message, state: FSMContext):
-    await message.answer("You have entered invalid data, please enter the cost of the product.")
+    await message.answer(
+        "You have entered invalid data, please enter the cost of the product."
+    )
+
 
 @admin_router.message(AddProduct.image, or_f(F.photo, F.text == "."))
 async def add_image(message: types.Message, state: FSMContext, session: AsyncSession):
@@ -228,6 +297,7 @@ async def add_image(message: types.Message, state: FSMContext, session: AsyncSes
         await state.clear()
 
     AddProduct.product_for_change = None
+
 
 @admin_router.message(AddProduct.image)
 async def add_image2(message: types.Message, state: FSMContext):
