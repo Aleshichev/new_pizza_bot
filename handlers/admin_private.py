@@ -16,6 +16,7 @@ from database.orm_query.product import (
     orm_update_product,
     orm_get_products,
     orm_get_product,
+    orm_delete_product,
 )
 from database.orm_query.category import (
     orm_get_categories,
@@ -74,6 +75,15 @@ async def starting_at_product(callback: types.CallbackQuery, session: AsyncSessi
     await callback.message.answer("The list of products ⏫")
 
 
+@admin_router.callback_query(F.data.startswith("delete_"))
+async def delete_product_callback(callback: types.CallbackQuery, session: AsyncSession):
+    product_id = callback.data.split("_")[-1]
+    await orm_delete_product(session, int(product_id))
+
+    await callback.answer("Product deleted")
+    await callback.message.answer("Product deleted!")
+
+
 # ---------- Micro FSM for Uploading/Modifying Banners -------------------#
 
 
@@ -90,26 +100,36 @@ async def add_image2(message: types.Message, state: FSMContext, session: AsyncSe
     )
     await state.set_state(AddBanner.image)
 
+
 @admin_router.message(AddBanner.image, F.photo)
 async def add_banner(message: types.Message, state: FSMContext, session: AsyncSession):
     image_id = message.photo[-1].file_id
     for_page = message.caption.strip()
     pages_names = [page.name for page in await orm_get_info_pages(session)]
     if for_page not in pages_names:
-        await message.answer(f"Enter a valid page name, for example:\
-                         \n{', '.join(pages_names)}")
+        await message.answer(
+            f"Enter a valid page name, for example:\
+                         \n{', '.join(pages_names)}"
+        )
         return
-    await orm_change_banner_image(session, for_page, image_id,)
+    await orm_change_banner_image(
+        session,
+        for_page,
+        image_id,
+    )
     await message.answer("Banner added/modified.")
     await state.clear()
-    
+
+
 @admin_router.message(AddBanner.image)
-async def add_banner2(message: types.Message, state: FSMContext):    
+async def add_banner2(message: types.Message, state: FSMContext):
     if message.text.casefold() == "cancel":
         await state.clear()
         await message.answer("Action canceled", reply_markup=ADMIN_KB)
     else:
         await message.answer("Send the banner photo or cancel")
+
+
 ### -----------------  FSM  add/edit product ----------------- ###
 
 
@@ -168,6 +188,28 @@ async def cancel_handler(message: types.Message, state: FSMContext) -> None:
         AddProduct.product_for_change = None
     await state.clear()
     await message.answer("Actions canceled", reply_markup=ADMIN_KB)
+
+
+@admin_router.message(StateFilter("*"), Command("back"))
+@admin_router.message(StateFilter("*"), F.text.casefold() == "back")
+async def back_step_handler(message: types.Message, state: FSMContext) -> None:
+    current_state = await state.get_state()
+
+    if current_state == AddProduct.name:
+        await message.answer(
+            'There is no previous step, either enter the product name or type "cancel".'
+        )
+        return
+
+    previous = None
+    for step in AddProduct.__all_states__:
+        if step.state == current_state:
+            await state.set_state(previous)
+            await message.answer(
+                f"Okay, you have returned to the previous step \n {AddProduct.texts[previous.state]}"
+            )
+            return
+        previous = step
 
 
 @admin_router.message(AddProduct.name, F.text)
