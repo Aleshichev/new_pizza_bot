@@ -1,6 +1,6 @@
 from aiogram.types import KeyboardButton
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
-
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, KeyboardButtonPollType
 def get_keyboard(
     *btns: str,
     placeholder: str = None,
@@ -24,3 +24,17 @@ def get_keyboard(
 
     return keyboard.adjust(*sizes).as_markup(
             resize_keyboard=True, input_field_placeholder=placeholder, one_time_keyboard=True)
+    
+    
+def get_phone_kb() -> ReplyKeyboardMarkup:
+
+    builder = ReplyKeyboardBuilder()
+    builder.button(
+        text="☎️ Send My Phone",
+        request_contact=True,
+    )
+    builder.adjust(1)
+    return builder.as_markup(
+        input_field_placeholder="Нажмите на кнопку",
+        resize_keyboard=True,
+    )
