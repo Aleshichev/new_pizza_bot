@@ -12,12 +12,12 @@ description_for_info_pages = {
         "In the establishment",
         marker="✅ ",
     ).as_html(),
-    "shipping": as_list(
+    "history": as_list(
         as_marked_section(
-            Bold("Delivery/order options:"),
-            "Courier",
-            "Pickup (I'll run and grab it now)",
-            "I'll eat at your place (I'll run over now)",
+            Bold("Очистка истории чата"),
+            "Нажмите три точки в правом верхнем углу",
+            "Выберите очистить историю",
+            "Поставьте галочку для чата тоже",
             marker="✅ ",
         ),
         as_marked_section(Bold("Not allowed:"), "Mail", "Carrier pigeons", marker="❌ "),

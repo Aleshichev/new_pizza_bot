@@ -6,7 +6,7 @@ import logging
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 from aiogram.client.bot import DefaultBotProperties
-
+from aiogram.types import BotCommandScopeAllPrivateChats, BotCommandScopeAllGroupChats
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -16,6 +16,7 @@ from database.engine import create_db, drop_db, session_maker
 from handlers.user_private import user_private_router
 from handlers.admin_private import admin_router
 from handlers.user_group import user_group_router
+from common.bot_commands import private, group
 
 
 
@@ -52,6 +53,9 @@ async def main():
     bot.my_admins_list = []
     
     await bot.delete_webhook(drop_pending_updates=True)
+    await bot.set_my_commands(commands=private, scope=BotCommandScopeAllPrivateChats())
+    await bot.set_my_commands(commands=group, scope=BotCommandScopeAllGroupChats())
+
     await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
 
 

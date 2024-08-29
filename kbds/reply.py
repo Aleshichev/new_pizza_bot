@@ -30,7 +30,7 @@ def get_phone_kb() -> ReplyKeyboardMarkup:
 
     builder = ReplyKeyboardBuilder()
     builder.button(
-        text="☎️ Send My Phone",
+        text="☎️ Поделиться телефоном",
         request_contact=True,
     )
     builder.adjust(1)

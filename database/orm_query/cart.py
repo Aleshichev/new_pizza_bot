@@ -4,9 +4,12 @@ from sqlalchemy.orm import joinedload
 from database.models import Cart
 
 
-
 async def orm_add_to_cart(session: AsyncSession, user_id: int, product_id: int):
-    query = select(Cart).where(Cart.user_id == user_id, Cart.product_id == product_id).options(joinedload(Cart.product))
+    query = (
+        select(Cart)
+        .where(Cart.user_id == user_id, Cart.product_id == product_id)
+        .options(joinedload(Cart.product))
+    )
     cart = await session.execute(query)
     cart = cart.scalar()
     if cart:
@@ -18,9 +21,10 @@ async def orm_add_to_cart(session: AsyncSession, user_id: int, product_id: int):
         await session.commit()
 
 
-
 async def orm_get_user_carts(session: AsyncSession, user_id):
-    query = select(Cart).filter(Cart.user_id == user_id).options(joinedload(Cart.product))
+    query = (
+        select(Cart).filter(Cart.user_id == user_id).options(joinedload(Cart.product))
+    )
     result = await session.execute(query)
     return result.scalars().all()
 
@@ -31,8 +35,20 @@ async def orm_delete_from_cart(session: AsyncSession, user_id: int, product_id: 
     await session.commit()
 
 
-async def orm_reduce_product_in_cart(session: AsyncSession, user_id: int, product_id: int):
-    query = select(Cart).where(Cart.user_id == user_id, Cart.product_id == product_id).options(joinedload(Cart.product))
+async def orm_delete_from_carts(session: AsyncSession, user_id: int):
+    query = delete(Cart).where(Cart.user_id == user_id)
+    await session.execute(query)
+    await session.commit()
+
+
+async def orm_reduce_product_in_cart(
+    session: AsyncSession, user_id: int, product_id: int
+):
+    query = (
+        select(Cart)
+        .where(Cart.user_id == user_id, Cart.product_id == product_id)
+        .options(joinedload(Cart.product))
+    )
     cart = await session.execute(query)
     cart = cart.scalar()
 
@@ -46,6 +62,3 @@ async def orm_reduce_product_in_cart(session: AsyncSession, user_id: int, produc
         await orm_delete_from_cart(session, user_id, product_id)
         await session.commit()
         return False
-
-
-

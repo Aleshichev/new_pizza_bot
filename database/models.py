@@ -4,9 +4,6 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 class Base(DeclarativeBase):
     created: Mapped[DateTime] = mapped_column(DateTime, default=func.now())
-    updated: Mapped[DateTime] = mapped_column(
-        DateTime, default=func.now(), onupdate=func.now()
-    )
 
 
 class Banner(Base):
@@ -16,6 +13,9 @@ class Banner(Base):
     name: Mapped[str] = mapped_column(String(15), unique=True)
     image: Mapped[str] = mapped_column(String(150), nullable=True)
     description: Mapped[str] = mapped_column(Text, nullable=True)
+    updated: Mapped[DateTime] = mapped_column(
+        DateTime, default=func.now(), onupdate=func.now()
+    )
 
 
 class Category(Base):
@@ -34,6 +34,9 @@ class Product(Base):
     price: Mapped[float] = mapped_column(Numeric(5,2), nullable=False)
     image: Mapped[str] = mapped_column(String(150))
     category_id: Mapped[int] = mapped_column(ForeignKey('category.id', ondelete='SET NULL'), nullable=False)
+    updated: Mapped[DateTime] = mapped_column(
+        DateTime, default=func.now(), onupdate=func.now()
+    )
 
     category: Mapped['Category'] = relationship(backref='product')
     
@@ -46,6 +49,9 @@ class User(Base):
     first_name: Mapped[str] = mapped_column(String(150), nullable=True)
     last_name: Mapped[str]  = mapped_column(String(150), nullable=True)
     phone: Mapped[str]  = mapped_column(String(13), nullable=True)
+    updated: Mapped[DateTime] = mapped_column(
+        DateTime, default=func.now(), onupdate=func.now()
+    )
     
 class Cart(Base):
     __tablename__ = 'cart'
