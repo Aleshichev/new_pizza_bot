@@ -10,7 +10,12 @@ down:
 build:
 	docker compose up --build -d
 
-start:
-	python3 app.py
+#lockal
+# start:
+# 	python3 app.py
 
-	
+start:
+	docker compose up -d bot
+
+logs:
+	docker compose logs -f

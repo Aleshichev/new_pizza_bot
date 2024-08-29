@@ -22,7 +22,7 @@ from common.bot_commands import private, group
 
 async def on_startup(bot):
 
-    #await drop_db()
+    await drop_db()
     await create_db()
 
 
