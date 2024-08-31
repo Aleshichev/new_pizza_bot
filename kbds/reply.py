@@ -1,6 +1,6 @@
 from aiogram.types import KeyboardButton
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, KeyboardButtonPollType
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from language.kbds import PHONE, BUTTON
 def get_keyboard(
     *btns: str,

@@ -1,6 +1,5 @@
-from sqlalchemy import select, update, delete
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from database.models import Category
 
 

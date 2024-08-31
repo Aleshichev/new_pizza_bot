@@ -7,17 +7,24 @@ from filters.chat_types import ChatTypeFilter
 from sqlalchemy.ext.asyncio import AsyncSession
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from dotenv import load_dotenv
 
-from database.models import User
-from kbds.inline import MenuCallBack, get_callback_btns
+from kbds.inline import MenuCallBack
 from handlers.menu_processing import get_menu_content
 from database.orm_query.cart import orm_add_to_cart, orm_delete_from_carts
 from database.orm_query.user import orm_add_user, orm_get_user
 from kbds.reply import get_phone_kb
 from utils.order_message import order_message
-from handlers.menu_processing import main_menu
+from language.user_private_handler import (
+    ACQUANTANCE,
+    SHARE_PHONE,
+    TAP_BUTTON,
+    REGISTRATION,
+    TIME_ORDER,
+    EMPTY_ORDER,
+    ERROR_TIME,
+    ADDED_GOODS,
+)
 
 load_dotenv()
 
@@ -46,7 +53,7 @@ async def start_cmd(message: types.Message, session: AsyncSession, state: FSMCon
             media.media, caption=media.caption, reply_markup=reply_markup
         )
     bot_message = await message.answer(
-        "Привет! Давай начнём регистрацию.\nКак к вам обращаться?"
+        ACQUANTANCE
     )
     await state.update_data(bot_message_id=bot_message.message_id)
     await state.set_state(UserState.name)
@@ -66,7 +73,7 @@ async def process_name(message: types.Message, state: FSMContext):
     phone_kb = get_phone_kb()
 
     phone_message = await message.answer(
-        f"Поделится номером телефона.\nТелефон будет использоватся в оформлении заказа",
+        SHARE_PHONE,
         reply_markup=phone_kb,
     )
 
@@ -80,7 +87,7 @@ async def process_phone(
 ):
     if message.contact is None or message.contact.user_id != message.from_user.id:
         await message.answer(
-            "Пожалуйста, используйте кнопку для отправки своего номера телефона."
+            TAP_BUTTON
         )
         return
 
@@ -99,7 +106,7 @@ async def process_phone(
     await state.clear()
 
     sent_message = await message.answer(
-        "Спасибо за регистрацию!", reply_markup=types.ReplyKeyboardRemove()
+        REGISTRATION, reply_markup=types.ReplyKeyboardRemove()
     )
     await message.delete()
     phone_message_id = user_data.get("phone_message_id")
@@ -126,7 +133,7 @@ async def process_phone(
 @user_private_router.callback_query(MenuCallBack.filter(F.menu_name == "order"))
 async def process_order(callback: types.CallbackQuery, state: FSMContext):
     time_question = await callback.message.answer(
-        "На когда приготовить ваш заказ?\nУкажите время в формате ЧЧ:ММ."
+        TIME_ORDER
     )
     await state.update_data(bot_message_id=time_question.message_id)
 
@@ -169,7 +176,7 @@ async def process_order_time(
         
         if full_message is None:
             main_page_message = await message.answer(
-            f"Ваш заказ пуст. Перейдите на главную страницу и добавьте товары в корзину")
+            EMPTY_ORDER)
             await message.delete()
             await asyncio.sleep(15)
             await main_page_message.delete()
@@ -177,7 +184,7 @@ async def process_order_time(
             await message.bot.send_message(CHAT_GROUP_ID, full_message)
 
             confirm_message = await message.answer(
-                f"Ваш заказ будет готов к {order_time}. Спасибо!\nХорошего дня!"
+                f"Ваше замовлення буде готове о {order_time}. Дякуємо!\nГарного дня!"
             )
 
             await state.clear()
@@ -190,7 +197,7 @@ async def process_order_time(
     else:
         await message.delete()
         error_message = await message.answer(
-            "Неверный формат времени. Пожалуйста, укажите время в формате ЧЧ:ММ."
+            ERROR_TIME
         )
         await state.update_data(error_message_id=error_message.message_id)
 
@@ -203,7 +210,7 @@ async def add_to_cart(
 ):
     user = callback.from_user
     await orm_add_to_cart(session, user_id=user.id, product_id=callback_data.product_id)
-    await callback.answer("Товар добавлен в корзину.", show_alert=True)
+    await callback.answer(ADDED_GOODS, show_alert=True)
 
 
 @user_private_router.callback_query(MenuCallBack.filter())

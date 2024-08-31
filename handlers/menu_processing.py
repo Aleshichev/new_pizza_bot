@@ -69,9 +69,10 @@ async def products(session, level, category, page):
     image = InputMediaPhoto(
         media=product.image,
         caption=f"<strong>{product.name}\
-                </strong>\n{product.description}\nCost: {round(product.price, 2)}\n\
-                <strong>Товар {paginator.page} из {paginator.pages}</strong>",
+                </strong>\n{product.description}\nКоштує: {round(product.price, 2)}\n\
+                <strong>Товар {paginator.page} з {paginator.pages}</strong>",
     )
+
 
     pagination_btns = pages(paginator)
 
@@ -125,12 +126,14 @@ async def carts(session, level, menu_name, page, user_id, product_id):
         image = InputMediaPhoto(
             media=cart.product.image,
             caption=f"Товар: <strong>{cart.product.name}</strong>\
-            \nЦена: <strong>{cart.product.price}</strong> грн\
-            \nКолличество: <strong>{cart.quantity}</strong> ед.\
-            \n\n------------------- Корзина ---------------------\
-            \nВ вашем заказе <strong>{paginator.pages}</strong> товаров\
-            \nСтоимость всего заказа <strong>{total_price}</strong> грн",
+            \nВартість: <strong>{cart.product.price}</strong> грн\
+            \nКількість: <strong>{cart.quantity}</strong> од.\
+            \n\n------------------- Кошик ---------------------\
+            \nУ вашему заказі <strong>{paginator.pages}</strong> товарів\
+            \nВартість усього замовлення <strong>{total_price}</strong> грн",
         )
+        
+        
 
         pagination_btns = pages(paginator)
 

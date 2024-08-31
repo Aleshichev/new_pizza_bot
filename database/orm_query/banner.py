@@ -1,18 +1,22 @@
-import math
 from sqlalchemy import select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload
 
 from database.models import Banner
 
-async def orm_add_banner_description(session: AsyncSession, data: dict):
+async def orm_add_banner_description(session: AsyncSession, data: list):
 
     query = select(Banner)
     result = await session.execute(query)
     if result.first():
         return
-    session.add_all([Banner(name=name, description=description) for name, description in data.items()]) 
+    for item in data:
+        obj = Banner(
+            name=item["name"],
+            description=item["description"],
+        )
+        session.add(obj)
     await session.commit()
+
 
 
 async def orm_change_banner_image(session: AsyncSession, name: str, image: str):

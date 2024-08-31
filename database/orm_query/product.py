@@ -1,9 +1,7 @@
-import math
 from sqlalchemy import select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload
 
-from database.models import Banner, Cart, Category, Product, User
+from database.models import Product
 
 
 async def orm_add_product(session: AsyncSession, data: dict):
